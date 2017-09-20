@@ -5,7 +5,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} ResizeableForm
    ClientLeft      =   108
    ClientTop       =   456
    ClientWidth     =   6588
-   OleObjectBlob   =   "ResizeableForm_v1.0.frx":0000
+   OleObjectBlob   =   "ResizeableForm.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
 Attribute VB_Name = "ResizeableForm"

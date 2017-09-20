@@ -13,7 +13,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
 Function GetLastNamePart(ByVal partID As Integer)
     
     Dim oDoc As AssemblyDocument

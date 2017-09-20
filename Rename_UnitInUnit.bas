@@ -7,7 +7,7 @@ Sub Rename_UnitInUnit()
     Set oDoc = ThisApplication.ActiveDocument
     
     Dim AssemblyName As String
-    Dim UnitName As String
+    Dim unitName As String
     Dim PartName As String
     
     Dim path As String
@@ -15,19 +15,25 @@ Sub Rename_UnitInUnit()
     Dim pathFileL As String
     Dim pathFileN As String
     
-    AssemblyName = Left(oDoc.DisplayName, 2)
+    AssemblyName = oDoc.DisplayName
     
-    For Each oOcc In oDoc.SelectSet
+    For Each oOcc In oDoc.ComponentDefinition.Occurrences
         
         path = oOcc.Definition.Document.File.FullFileName
         pathDir = Left(path, InStrRev(path, "\"))
         pathFileL = Mid(path, InStrRev(path, "\") + 1)
-        UnitName = Left(oOcc.Name, InStr(oOcc.Name, ":") - 1)
+        unitName = Left(oOcc.Name, InStr(oOcc.Name, ":") - 1)
         
-        If Len(UnitName) - InStrRev(UnitName, AssemblyName) <> Len(AssemblyName) - 1 Then
+        If InStrRev(unitName, AssemblyName) = 0 Then
         
-            pathFileN = UnitName & "-" & AssemblyName & Mid(pathFileL, InStrRev(pathFileL, "."))
-            oOcc.Name = UnitName & "-" & AssemblyName & Mid(oOcc.Name, InStrRev(oOcc.Name, ":"))
+            pathFileN = Replace(unitName, "-", "-" & AssemblyName & "-", 1, 1)
+            
+            If Len(pathFileN) = InStrRev(pathFileN, "-01") + 2 Then
+                pathFileN = Left(pathFileN, InStrRev(pathFileN, "-01") - 1)
+            End If
+            
+            oOcc.Name = pathFileN & Mid(oOcc.Name, InStrRev(oOcc.Name, ":"))
+            pathFileN = pathFileN & Mid(pathFileL, InStrRev(pathFileL, "."))
             
             If Dir(pathDir & pathFileL) <> "" Then
                 Name pathDir & pathFileL As pathDir & pathFileN
@@ -46,13 +52,17 @@ Sub Rename_UnitInUnit()
             path = childOcc.Definition.Document.File.FullFileName
             pathDir = Left(path, InStrRev(path, "\"))
             pathFileL = Mid(path, InStrRev(path, "\") + 1)
-            UnitName = Left(childOcc.Name, InStr(4, childOcc.Name, ":") - 1)
+            unitName = Left(childOcc.Name, InStr(4, childOcc.Name, ":") - 1)
             
-            If Len(UnitName) - InStrRev(UnitName, AssemblyName) <> Len(AssemblyName) - 1 Then
+            If InStrRev(unitName, AssemblyName) = 0 Then
             
-                pathFileN = UnitName & "-" & AssemblyName & Mid(pathFileL, InStrRev(pathFileL, "."))
-            
-                childOcc.Name = UnitName & "-" & AssemblyName & Mid(childOcc.Name, InStrRev(childOcc.Name, ":"))
+                pathFileN = Left(unitName, InStr(1, unitName, "-")) & Replace(unitName, "-", "-" & AssemblyName & "-", InStr(1, unitName, "-") + 1, 1)
+                If Len(pathFileN) = InStrRev(pathFileN, "-01") + 2 Then
+                    pathFileN = Left(pathFileN, InStrRev(pathFileN, "-01") - 1)
+                End If
+                
+                childOcc.Name = pathFileN & Mid(childOcc.Name, InStrRev(childOcc.Name, ":"))
+                pathFileN = pathFileN & Mid(pathFileL, InStrRev(pathFileL, "."))
                     
                 If Dir(pathDir & pathFileL) <> "" Then
                     Name pathDir & pathFileL As pathDir & pathFileN
@@ -68,7 +78,7 @@ Sub Rename_UnitInUnit()
             End If
             
         Next
-    
+        
     Next
     
     ThisApplication.ActiveDocument.Update

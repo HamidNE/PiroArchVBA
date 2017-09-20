@@ -1,6 +1,7 @@
 Attribute VB_Name = "ChangeMMToCM"
 Sub ChangeMMToCM()
 
+    'Dim oDoc As PartDocument
     Dim oDoc As AssemblyDocument
     Dim oOcc As ComponentOccurrence
     Set oDoc = ThisApplication.ActiveDocument
