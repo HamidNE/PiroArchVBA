@@ -5,7 +5,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} RegEx_Rule_Form
    ClientLeft      =   108
    ClientTop       =   456
    ClientWidth     =   9012.001
-   OleObjectBlob   =   "RegEx_Rule_Form_v1.3.frx":0000
+   OleObjectBlob   =   "RegEx_Rule_Form.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
 Attribute VB_Name = "RegEx_Rule_Form"
@@ -13,6 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 
 
 Public Function RxReplace( _
@@ -245,10 +246,6 @@ Private Sub CommandButton1_Click()
     For Each oPart In oDoc.AllReferencedDocuments
         oPart.UnitsOfMeasure.LengthUnits = kCentimeterLengthUnits
     Next
-    
-    Dim oDoc As AssemblyDocument
-    Dim oOcc As ComponentOccurrence
-    Set oDoc = ThisApplication.ActiveDocument
     
     Dim ascTemp As Integer
     Dim Params As Parameters
