@@ -5,7 +5,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} RegEx_Rule_Form
    ClientLeft      =   108
    ClientTop       =   456
    ClientWidth     =   9012.001
-   OleObjectBlob   =   "RegEx_Rule_Form.frx":0000
+   OleObjectBlob   =   "RegEx_Rule_Form_v1.3.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
 Attribute VB_Name = "RegEx_Rule_Form"
@@ -13,6 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 
 Public Function RxReplace( _
     ByVal SourceString As String, _
@@ -50,11 +51,11 @@ Private Sub CommandButton1_Click()
 
     ElseIf OptionButton2.Value = True Then
 
-        Pattern = "k=""(\d{2})-""\+s\+"":\d""\s*Parameter\(k, ""D""\)=(.+)\s*Parameter\(k, ""WH""\)=(.+)"
+        Pattern = "k\d?=""(\d{2})-""\+s\+"":\d""\s*Parameter\(k\d?, ""D""\)=(.+)\s*Parameter\(k\d?, ""WH""\)=(.+)"
         ReplacePattern = "d_$1=$2" & Chr(10) & "wh_$1=$3"
         str = RxReplace(TextBox1.Text, Pattern, ReplacePattern)
 
-        Pattern = "k=""(\d{2})-""\+s\+"":\d""\s*Parameter\(k, ""WH""\)=(.+)\s*Parameter\(k, ""D""\)=(.+)"
+        Pattern = "k\d?=""(\d{2})-""\+s\+"":\d""\s*Parameter\(k\d?, ""WH""\)=(.+)\s*Parameter\(k\d?, ""D""\)=(.+)"
         ReplacePattern = "wh_$1=$2" & Chr(10) & "d_$1=$3"
         str = RxReplace(str, Pattern, ReplacePattern)
 
@@ -235,6 +236,74 @@ Private Sub CommandButton1_Click()
         RenameUnitVeryOld
     End If
     
+    Set param = userParams.AddByExpression("Style", "1", kUnitlessUnits)
+    Set param = userParams.AddByExpression("StyleCount", "1", kUnitlessUnits)
+    Set param = userParams.AddByValue("Unit", True, kBooleanUnits)
+    
+    oDoc.UnitsOfMeasure.LengthUnits = kCentimeterLengthUnits
+    
+    For Each oPart In oDoc.AllReferencedDocuments
+        oPart.UnitsOfMeasure.LengthUnits = kCentimeterLengthUnits
+    Next
+    
+    Dim oDoc As AssemblyDocument
+    Dim oOcc As ComponentOccurrence
+    Set oDoc = ThisApplication.ActiveDocument
+    
+    Dim ascTemp As Integer
+    Dim Params As Parameters
+    Set Params = oDoc.ComponentDefinition.Parameters
+    
+    Dim userParam As UserParameter
+    For Each userParam In oDoc.ComponentDefinition.Parameters.UserParameters
+        ascTemp = Asc(Left(userParam.Expression, 1))
+        If userParam.Units = "mm" Then
+            userParam.Units = "cm"
+        End If
+        If ascTemp < 58 And ascTemp > 47 Then
+            userParam.Expression = userParam.Value
+        End If
+    Next
+    
+    Dim modelParam As ModelParameter
+    For Each modelParam In oDoc.ComponentDefinition.Parameters.ModelParameters
+        If modelParam.Units = "mm" Then
+            modelParam.Units = "cm"
+        End If
+        ascTemp = Asc(Left(modelParam.Expression, 1))
+        If ascTemp < 58 And ascTemp > 47 Then
+            modelParam.Expression = modelParam.Value
+        End If
+    Next
+    
+    For Each oOcc In oDoc.ComponentDefinition.Occurrences
+        
+        Set Params = oOcc.Definition.Parameters
+        
+        For Each userParam In Params.UserParameters
+            If userParam.Units = "mm" Then
+                userParam.Units = "cm"
+            End If
+            ascTemp = Asc(Left(userParam.Expression, 1))
+            If ascTemp < 58 And ascTemp > 47 Then
+                userParam.Expression = userParam.Value
+            End If
+        Next
+    
+        For Each modelParam In Params.ModelParameters
+            If modelParam.Units = "mm" Then
+                modelParam.Units = "cm"
+            End If
+            ascTemp = Asc(Left(modelParam.Expression, 1))
+            If ascTemp < 58 And ascTemp > 47 Then
+                modelParam.Expression = modelParam.Value
+            End If
+        Next
+        
+    Next
+    
+    ThisApplication.ActiveDocument.Update
+    
 End Sub
 
 Sub RenameUnitVeryOld()
@@ -250,7 +319,7 @@ Sub RenameUnitVeryOld()
     Dim pathFileL As String
     Dim pathFileN As String
     
-    Dim partName As String
+    Dim PartName As String
     Dim subjectName As String
     
     Dim i As Integer
@@ -258,12 +327,12 @@ Sub RenameUnitVeryOld()
     
     For Each oOcc In oDoc.ComponentDefinition.Occurrences
         
-        path = oOcc.Definition.Document.file.FullFileName
+        path = oOcc.Definition.Document.File.FullFileName
         pathDir = Left(path, InStrRev(path, "\"))
         pathFileL = Mid(path, InStrRev(path, "\") + 1)
         
-        partName = oOcc.Name
-        subjectName = Left(partName, InStr(partName, "-") - 1)
+        PartName = oOcc.Name
+        subjectName = Left(PartName, InStr(PartName, "-") - 1)
         
         If subjectName = "Bott" Then
             subjectName = "11"
@@ -317,18 +386,18 @@ Sub RenameUnitVeryOld()
             subjectName = "34"
         End If
         
-        partName = subjectName & Mid(partName, InStr(partName, "-"))
+        PartName = subjectName & Mid(PartName, InStr(PartName, "-"))
         pathFileN = subjectName & Mid(pathFileL, InStr(pathFileL, "-"))
         
-        oOcc.Name = partName
+        oOcc.Name = PartName
         
         If Dir(pathDir & pathFileL) <> "" Then
             Name pathDir & pathFileL As pathDir & pathFileN
         End If
         
-        For Each file In oDoc.file.ReferencedFileDescriptors
-            If pathFileL = Mid(file.RelativeFileName, InStrRev(file.RelativeFileName, "\") + 1) Then
-                file.ReplaceReference (pathDir & pathFileN)
+        For Each File In oDoc.File.ReferencedFileDescriptors
+            If pathFileL = Mid(File.RelativeFileName, InStrRev(File.RelativeFileName, "\") + 1) Then
+                File.ReplaceReference (pathDir & pathFileN)
             End If
         Next
         

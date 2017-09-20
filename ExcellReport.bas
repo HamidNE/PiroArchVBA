@@ -7,7 +7,7 @@ Sub Report()
     Dim objDict_16 As Object
     Dim excellTemplatePath As String
     
-    excellTemplatePath = "C:\Users\HamidNE\Documents\Custom Office Templates\andaze-363-().xltx"
+    excellTemplatePath = Environ("UserProfile") & "\Documents\Custom Office Templates\andaze-363-().xltx"
     
     Dim path
     path = BrowseForFolder("")
@@ -18,11 +18,29 @@ Sub Report()
     
         BOMExportExcel (path)
         Workbooks.Open path & "BOM.xlsx"
+        
+        On Error GoTo ErrHandler:
+        
+            Var = Cells.Find(What:="*Varies*", After:=ActiveCell, LookIn:=xlFormulas, _
+            LookAt:=xlPart, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
+            MatchCase:=False, SearchFormat:=False).Activate
+            
+            Var = MsgBox("This Report has invalid Value(s) !!" & vbNewLine & "Plase Fix Value(s) and Try Again ...", vbCritical, "Error")
+            ActiveWorkbook.Close True
+            Exit Sub
+        
+ErrHandler:
+    
+        GoTo Continue
+        Resume Next
+        
+Continue:
+        
         Sort
         
         ''' Get Material with tinknees 3
         Worksheets("Sorted").Select
-        Range("B1").AutoFilter Field:=2, Criteria1:="3"
+        Range("B1").AutoFilter Field:=2, Criteria1:=Array("3", "3.000 mm", "0.300 cm"), Operator:=xlFilterValues
         Range("A1").CurrentRegion.Copy
     
         Worksheets.Add
@@ -33,15 +51,14 @@ Sub Report()
         Set objDict_3 = CreateObject("Scripting.Dictionary")
         material_3 = Application.Transpose(Range([a1], Cells(Rows.Count, "A").End(xlUp)))
         
+        
         If IsArray(material_3) = True Then
             
             For i = 2 To UBound(material_3, 1)
                 objDict_3(material_3(i)) = 1
             Next
                 
-            Range("DD1:DD" & objDict_3.Count) = Application.Transpose(objDict_3.Keys)
-            material_3 = Application.Transpose(Range([dd1], Cells(Rows.Count, "DD").End(xlUp)))
-            Range("DD1:DD" & objDict_3.Count).Delete
+            material_3 = objDict_3.keys
             
             Columns("A:A").Select
             Selection.EntireColumn.Hidden = True
@@ -55,7 +72,7 @@ Sub Report()
         
         ''' Get Material with tinknees 16
         Worksheets("Sorted").Select
-        Range("B1").AutoFilter Field:=2, Criteria1:="16"
+        Range("B1").AutoFilter Field:=2, Criteria1:=Array("16", "16.000 mm", "1.600 cm"), Operator:=xlFilterValues
         Range("A1").CurrentRegion.Copy
     
         Worksheets.Add
@@ -72,9 +89,7 @@ Sub Report()
                 objDict_16(material_16(i)) = 1
             Next
             
-            Range("DD1:DD" & objDict_16.Count) = Application.Transpose(objDict_16.Keys)
-            material_16 = Application.Transpose(Range([dd1], Cells(Rows.Count, "DD").End(xlUp)))
-            Range("DD1:DD" & objDict_16.Count).Delete
+            material_16 = objDict_16.keys
             
             Columns("A:A").Select
             Selection.EntireColumn.Hidden = True
@@ -86,75 +101,87 @@ Sub Report()
         
         End If
         
-        ActiveWorkbook.Close True
-        Workbooks.Open path & "BOM.xlsx"
+        materialMessage = "Material with a thickness of 3 mm :"
         
-        For i = 1 To objDict_3.Count
+        If objDict_3.Count = 0 Then
+            materialMessage = materialMessage & vbNewLine & "Null"
+        Else
+            For Each materialsName In material_3
+                materialMessage = materialMessage & vbNewLine & materialsName
+            Next
+        End If
         
-            Workbooks("BOM.xlsx").Activate
-            Worksheets("3").Select
+        materialMessage = materialMessage & vbNewLine & vbNewLine & "Material with a thickness of 16 mm :"
+        
+        If objDict_16.Count = 0 Then
+            materialMessage = materialMessage & vbNewLine & "Null"
+        Else
+            For Each materialsName In material_16
+                materialMessage = materialMessage & vbNewLine & materialsName
+            Next
+        End If
+        
+        materialMessage = materialMessage & vbNewLine & vbNewLine & vbNewLine & "Are You Sure To Continue ?"
+        
+        If MsgBox(materialMessage, vbYesNo, "Informations") = vbYes Then
+        
+            ActiveWorkbook.Close True
+            Workbooks.Open path & "BOM.xlsx"
             
-            If objDict_3.Count = 1 Then
-                Range("A1").AutoFilter Field:=1, Criteria1:=material_3
-            ElseIf objDict_3.Count > 1 Then
+            For i = 0 To objDict_3.Count - 1
+            
+                Workbooks("BOM.xlsx").Activate
+                Worksheets("3").Select
+                
                 Range("A1").AutoFilter Field:=1, Criteria1:=material_3(i)
-            End If
-            
-            Range(Cells(2, 3), Cells(Cells(1, 1).End(xlDown).Row, 12)).Copy
-            
-            Workbooks.Add Template:=excellTemplatePath
-            
-            Range("C11").PasteSpecial xlPasteValues
-            Range("G6").Value = "3"
-            Range("G4:M4").Select
-    
-            If objDict_3.Count = 1 Then
-                ActiveCell.Value = material_3
-                ActiveWorkbook.SaveAs path & material_3 & "_3.xlsx"
-            ElseIf objDict_3.Count > 1 Then
+                
+                Range(Cells(2, 3), Cells(Cells(1, 1).End(xlDown).Row, 12)).Copy
+                
+                Workbooks.Add Template:=excellTemplatePath
+                
+                Range("C11").PasteSpecial xlPasteValues
+                Range("G6").Value = "3"
+                Range("G4:M4").Select
+        
                 ActiveCell.Value = material_3(i)
                 ActiveWorkbook.SaveAs path & material_3(i) & "_3.xlsx"
-            End If
-    
-            ActiveWorkbook.Close
-            
-        Next i
         
-        For i = 1 To objDict_16.Count
-        
-            Workbooks("BOM.xlsx").Activate
-            Worksheets("16").Select
+                ActiveWorkbook.Close
+                
+            Next i
             
-            If objDict_16.Count = 1 Then
-                Range("A1").AutoFilter Field:=1, Criteria1:=material_16
-            ElseIf objDict_16.Count > 1 Then
+            For i = 0 To objDict_16.Count - 1
+            
+                Workbooks("BOM.xlsx").Activate
+                Worksheets("16").Select
+                
                 Range("A1").AutoFilter Field:=1, Criteria1:=material_16(i)
-            End If
-            
-            Range(Cells(2, 3), Cells(Cells(1, 1).End(xlDown).Row, 12)).Copy
-            
-            Workbooks.Add Template:=excellTemplatePath
-            
-            Range("C11").PasteSpecial xlPasteValues
-            Range("G6").Value = "16"
-            Range("G4:M4").Select
-    
-            If objDict_16.Count = 1 Then
-                ActiveCell.Value = material_16
-                ActiveWorkbook.SaveAs path & material_16 & "_16.xlsx"
-            ElseIf objDict_16.Count > 1 Then
+                
+                Range(Cells(2, 3), Cells(Cells(1, 1).End(xlDown).Row, 12)).Copy
+                
+                Workbooks.Add Template:=excellTemplatePath
+                
+                Range("C11").PasteSpecial xlPasteValues
+                Range("G6").Value = "16"
+                Range("G4:M4").Select
+        
                 ActiveCell.Value = material_16(i)
                 ActiveWorkbook.SaveAs path & material_16(i) & "_16.xlsx"
-            End If
+                
+                ActiveWorkbook.Close
+                
+            Next i
             
-            ActiveWorkbook.Close
+            Workbooks("BOM.xlsx").Activate
+            ActiveWorkbook.Close False
             
-        Next i
+            Var = MsgBox("Reports of the operation was successful.", vbInformation, "Report")
+            
+        Else
         
-        Workbooks("BOM.xlsx").Activate
-        ActiveWorkbook.Close False
-        
-        Var = MsgBox("Reports of the operation was successful.", vbInformation, "Report")
+            ActiveWorkbook.Close True
+            
+        End If
     
     End If
     
@@ -215,15 +242,9 @@ Sub ValidationColumn(ByVal column As String)
     Dim element As Range
     Dim MaxRows As Long
     
-    Range(column & "3").Select
-    Range(Selection, Selection.End(xlDown)).Select
-    Selection.Replace What:=" mm", Replacement:="", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False
-        
     'Range(column & "3").Select
     'Range(Selection, Selection.End(xlDown)).Select
-    'Selection.Replace What:=".", Replacement:="/", LookAt:=xlPart, _
+    'Selection.Replace What:=" cm", Replacement:="", LookAt:=xlPart, _
         SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
         ReplaceFormat:=False
     
@@ -232,9 +253,16 @@ Sub ValidationColumn(ByVal column As String)
     End With
     
     For Each element In Worksheets("Sorted").Range(column & "2:" & column & MaxRows)
-        If IsNumeric(element.Value) Then
+        
+        If Right(element.Value, 3) = " mm" Then
+            temp = CInt(Left(element.Value, Len(element.Value) - 3))
+            element.Value = temp / 10
+        ElseIf Right(element.Value, 3) = " cm" Then
+            element.Value = CInt(Left(element.Value, Len(element.Value) - 3))
+        ElseIf IsNumeric(element.Value) Then
             element.Value = element.Value / 10
         End If
+        
     Next
 
 End Sub
@@ -263,17 +291,6 @@ Sub Sort()
     ValidationColumn ("C")
     ValidationColumn ("D")
     
-    Range("B3").Select
-    Range(Selection, Selection.End(xlDown)).Select
-    Selection.Replace What:=".000 mm", Replacement:="", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False
-    'Range(Selection, Selection.End(xlDown)).Select
-    'Selection.Replace What:="/", Replacement:="", LookAt:=xlPart, _
-        SearchOrder:=xlByRows, MatchCase:=False, SearchFormat:=False, _
-        ReplaceFormat:=False
-
-
 End Sub
 
 Function BrowseForFolder(Optional OpenAt As Variant) As Variant
